@@ -8,4 +8,5 @@ type Post struct {
 	User     string   `json:"user"`
 	Message  string   `json:"message"`
 	Location Location `json:"location"`
+	Url      string   `json:"url"`
 }

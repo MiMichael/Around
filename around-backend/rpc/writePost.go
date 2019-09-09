@@ -1,11 +1,14 @@
 package rpc
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+
+	consts "../constant"
 
 	es "../elasticsearch"
+	gcs "../gcs"
 	"../post"
 	"github.com/google/uuid"
 )
@@ -19,15 +22,36 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		return
 	}
-	decoder := json.NewDecoder(r.Body)
-	var p post.Post
-	if err := decoder.Decode(&p); err != nil {
-		http.Error(w, "Cannot decode post data from client", http.StatusBadRequest)
-		fmt.Printf("Cannot decode post data from client %v\n", err)
+	lat, _ := strconv.ParseFloat(r.FormValue("lat"), 64)
+	lon, _ := strconv.ParseFloat(r.FormValue("lon"), 64)
+
+	p := &post.Post{
+		User:    r.FormValue("user"),
+		Message: r.FormValue("message"),
+		Location: post.Location{
+			Lat: lat,
+			Lon: lon,
+		},
+	}
+
+	id := uuid.New().String()
+
+	file, _, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "Image is not available", http.StatusBadRequest)
+		fmt.Printf("Image is not available %v\n", err)
 		return
 	}
-	id := uuid.New().String()
-	err := es.SaveToES(&p, id)
+	attrs, err := gcs.SaveToGCS(file, consts.BUCKET_NAME, id)
+	if err != nil {
+		http.Error(w, "Failed to save image to GCS", http.StatusInternalServerError)
+		fmt.Printf("Failed to save post to GCS %v.\n", err)
+		return
+
+	}
+	p.Url = attrs.MediaLink
+
+	err = es.SaveToES(p, id)
 	if err != nil {
 		http.Error(w, "Failed to save post to Elastic Search", http.StatusInternalServerError)
 		fmt.Printf("Failed to save post to Elastic Search %v\n", err)
