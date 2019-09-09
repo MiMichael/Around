@@ -1,4 +1,4 @@
-package post
+package external
 
 type Location struct {
 	Lat float64 `json:"lat"`

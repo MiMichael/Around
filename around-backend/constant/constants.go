@@ -8,4 +8,7 @@ const (
 	BUCKET_NAME     = "around-post-files"
 	CREDENTIAL_PATH = "G:/laioffer/Around/around-backend/aroundmj.json"
 	PROJECT_ID      = "aroundmj"
+	USER_INDEX      = "user"
+	USER_TYPE       = "user"
+	TOKEN_KEY       = "secret"
 )

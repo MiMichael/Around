@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	consts "../constant"
-
 	es "../elasticsearch"
+	ex "../external"
 	gcs "../gcs"
-	"../post"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 )
 
@@ -22,13 +22,18 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		return
 	}
+
+	user := r.Context().Value("user")
+	claims := user.(*jwt.Token).Claims
+	username := claims.(jwt.MapClaims)["username"]
+
 	lat, _ := strconv.ParseFloat(r.FormValue("lat"), 64)
 	lon, _ := strconv.ParseFloat(r.FormValue("lon"), 64)
 
-	p := &post.Post{
-		User:    r.FormValue("user"),
+	p := &ex.Post{
+		User:    username.(string),
 		Message: r.FormValue("message"),
-		Location: post.Location{
+		Location: ex.Location{
 			Lat: lat,
 			Lon: lon,
 		},
@@ -36,13 +41,13 @@ func HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	id := uuid.New().String()
 
-	file, _, err := r.FormFile("image")
+	image, _, err := r.FormFile("image")
 	if err != nil {
 		http.Error(w, "Image is not available", http.StatusBadRequest)
 		fmt.Printf("Image is not available %v\n", err)
 		return
 	}
-	attrs, err := gcs.SaveToGCS(file, consts.BUCKET_NAME, id)
+	attrs, err := gcs.SaveToGCS(image, consts.BUCKET_NAME, id)
 	if err != nil {
 		http.Error(w, "Failed to save image to GCS", http.StatusInternalServerError)
 		fmt.Printf("Failed to save post to GCS %v.\n", err)

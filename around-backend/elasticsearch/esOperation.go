@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	consts "../constant"
-	"../post"
+	ex "../external"
 	"gopkg.in/olivere/elastic.v6"
 )
 
@@ -36,9 +36,19 @@ func CreateIndexIfNotExist() {
 			panic(err)
 		}
 	}
+	exists, err = client.IndexExists(consts.USER_INDEX).Do(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	if !exists {
+		_, err = client.CreateIndex(consts.USER_INDEX).Do(context.Background())
+		if err != nil {
+			panic(err)
+		}
+	}
 
 }
-func SaveToES(post *post.Post, id string) error {
+func SaveToES(post *ex.Post, id string) error {
 	//set sniff 调用变成自己名字的函数
 	client, err := elastic.NewClient(elastic.SetURL(consts.ES_URL), elastic.SetSniff(false))
 	if err != nil {
@@ -58,7 +68,7 @@ func SaveToES(post *post.Post, id string) error {
 	return nil
 
 }
-func ReadFromES(lat, lon float64, ran string) ([]post.Post, error) {
+func ReadFromES(lat, lon float64, ran string) ([]ex.Post, error) {
 	client, err := elastic.NewClient(elastic.SetURL(consts.ES_URL), elastic.SetSniff(false))
 	if err != nil {
 		return nil, err
@@ -76,10 +86,10 @@ func ReadFromES(lat, lon float64, ran string) ([]post.Post, error) {
 
 	fmt.Printf("Query took %d milliseconds\n", searchResult.TookInMillis)
 
-	var ptyp post.Post
-	var posts []post.Post
+	var ptyp ex.Post
+	var posts []ex.Post
 	for _, item := range searchResult.Each(reflect.TypeOf(ptyp)) {
-		if p, ok := item.(post.Post); ok {
+		if p, ok := item.(ex.Post); ok {
 			posts = append(posts, p)
 			// fmt.Printf("Post by %s: %s\n", p.User, p.Message)
 		}
