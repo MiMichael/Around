@@ -9,4 +9,6 @@ type Post struct {
 	Message  string   `json:"message"`
 	Location Location `json:"location"`
 	Url      string   `json:"url"`
+	Type     string   `json:"type"`
+	Face     float64  `json:"face"`
 }
